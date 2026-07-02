@@ -1,0 +1,1744 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Time Tracker Dashboard</title>
+  <style>
+    :root {
+      --bg: #08131f;
+      --panel: #0c1b2c;
+      --panel-2: #102238;
+      --panel-3: #172f4a;
+      --line: #213b58;
+      --text: #edf6ff;
+      --muted: #9ab0c7;
+      --blue: #35a7ff;
+      --cyan: #3ddbd9;
+      --green: #44d47e;
+      --orange: #f4aa4a;
+      --red: #f25f72;
+      --pink: #b889ff;
+      --yellow: #f4df6b;
+      --shadow: 0 18px 55px rgba(0, 0, 0, .32);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(53,167,255,.18), transparent 34%),
+        radial-gradient(circle at 92% 8%, rgba(184,137,255,.11), transparent 32%),
+        linear-gradient(140deg, #06101b, var(--bg) 48%, #0a1725);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -30%;
+      z-index: -1;
+      background:
+        conic-gradient(from 180deg at 50% 50%, rgba(53,167,255,.11), rgba(184,137,255,.09), rgba(68,212,126,.08), rgba(53,167,255,.11));
+      filter: blur(70px);
+      animation: aurora 18s linear infinite;
+      opacity: .78;
+    }
+
+    @keyframes aurora {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.08); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button, .card, .tab, input, select {
+      transition: border-color .2s ease, background .2s ease, box-shadow .2s ease, transform .2s ease;
+    }
+
+    button:hover, .tab:hover {
+      transform: translateY(-1px);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 18px;
+      border-right: 1px solid var(--line);
+      background: rgba(7, 17, 31, .86);
+      backdrop-filter: blur(18px);
+    }
+
+    .logo {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--blue), var(--pink));
+      color: white;
+      font-weight: 900;
+      box-shadow: 0 12px 28px rgba(39,168,255,.25);
+      animation: pulseMark 3s ease-in-out infinite;
+    }
+
+    @keyframes pulseMark {
+      0%, 100% { box-shadow: 0 12px 28px rgba(39,168,255,.25); }
+      50% { box-shadow: 0 12px 34px rgba(217,108,255,.38); }
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    .logo h1 {
+      font-size: 18px;
+      letter-spacing: 0;
+      line-height: 1.1;
+    }
+
+    .logo span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    nav {
+      display: grid;
+      gap: 7px;
+    }
+
+    .tab {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      text-align: left;
+      font-weight: 800;
+    }
+
+    .tab.active {
+      border-color: rgba(39,168,255,.44);
+      background: linear-gradient(90deg, rgba(39,168,255,.18), rgba(39,168,255,.04));
+      color: var(--text);
+      box-shadow: inset 3px 0 0 var(--blue), 0 10px 24px rgba(39,168,255,.10);
+    }
+
+    .side-card {
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(16,36,61,.72);
+    }
+
+    .side-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .meter {
+      height: 9px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #07111f;
+    }
+
+    .meter span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--blue), var(--pink));
+      transition: width .25s ease;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 22px;
+    }
+
+    .hero-strip {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+      padding: 18px;
+      border: 1px solid rgba(39,168,255,.32);
+      border-radius: 8px;
+      overflow: hidden;
+      background:
+        linear-gradient(120deg, rgba(39,168,255,.18), rgba(217,108,255,.11)),
+        rgba(16,36,61,.72);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-strip::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.10) 45%, transparent 72%);
+      transform: translateX(-100%);
+      animation: sheen 5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes sheen {
+      0%, 45% { transform: translateX(-100%); }
+      70%, 100% { transform: translateX(100%); }
+    }
+
+    .hero-strip h3 {
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+
+    .hero-strip p {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .focus-input {
+      width: min(420px, 100%);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .title h2 {
+      font-size: 28px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .title p {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .top-actions .btn:not(.primary) {
+      background: rgba(16,36,61,.55);
+      color: #cfe1f3;
+    }
+
+    .btn {
+      min-height: 38px;
+      padding: 0 13px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(16,36,61,.8);
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .btn.primary {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--blue), #5067ff);
+      box-shadow: 0 10px 28px rgba(39,168,255,.24);
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .dashboard-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .two {
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
+    }
+
+    .three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(16,36,61,.92), rgba(11,27,49,.92));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: riseIn .35s ease both;
+    }
+
+    .card:hover {
+      border-color: rgba(39,168,255,.42);
+      box-shadow: 0 20px 62px rgba(0, 0, 0, .38), 0 0 0 1px rgba(39,168,255,.08);
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .command-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .command {
+      min-height: 72px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(16,36,61,.72);
+      color: var(--text);
+      text-align: left;
+    }
+
+    .command:hover {
+      border-color: rgba(61,219,217,.42);
+      background: rgba(20,48,76,.82);
+    }
+
+    .command strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .command span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(20,45,74,.58);
+    }
+
+    .card-head h3 {
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .card-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .card-body {
+      padding: 14px;
+    }
+
+    .kpi {
+      min-height: 126px;
+    }
+
+    .kpi .value {
+      margin-top: 10px;
+      font-size: 34px;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .kpi .label {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .spark {
+      display: flex;
+      align-items: end;
+      gap: 5px;
+      height: 44px;
+      margin-top: 13px;
+    }
+
+    .spark i {
+      flex: 1;
+      min-width: 4px;
+      border-radius: 99px 99px 2px 2px;
+      background: linear-gradient(180deg, var(--cyan), var(--blue));
+      opacity: .92;
+      animation: barPop .6s ease both;
+    }
+
+    @keyframes barPop {
+      from { transform: scaleY(.2); transform-origin: bottom; opacity: .35; }
+      to { transform: scaleY(1); transform-origin: bottom; opacity: .92; }
+    }
+
+    .ring {
+      --p: 0;
+      width: 170px;
+      height: 170px;
+      display: grid;
+      place-items: center;
+      margin: 4px auto 14px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, var(--panel) 0 55%, transparent 56%),
+        conic-gradient(var(--green) calc(var(--p) * 1%), rgba(34,64,98,.75) 0);
+      box-shadow: 0 0 36px rgba(53,224,123,.16);
+    }
+
+    .ring strong {
+      font-size: 34px;
+    }
+
+    .achievement-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .achievement {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(7,17,31,.55);
+    }
+
+    .achievement.unlocked {
+      border-color: rgba(53,224,123,.42);
+      background: rgba(53,224,123,.09);
+    }
+
+    .achievement strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+    }
+
+    .achievement span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mood-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mood-btn {
+      min-height: 54px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(7,17,31,.6);
+      color: var(--text);
+      font-size: 22px;
+    }
+
+    .mood-btn.active {
+      border-color: var(--cyan);
+      background: rgba(34,211,238,.14);
+      box-shadow: 0 0 24px rgba(34,211,238,.14);
+    }
+
+    .timer-panel {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 14px;
+      border: 1px solid rgba(39,168,255,.26);
+      border-radius: 8px;
+      background: rgba(7,17,31,.5);
+    }
+
+    .timer-face {
+      width: 160px;
+      height: 160px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, #091426 0 58%, transparent 59%),
+        conic-gradient(var(--cyan) var(--timer, 0%), rgba(34,64,98,.7) 0);
+      box-shadow: 0 0 34px rgba(34,211,238,.13);
+      font-size: 31px;
+      font-weight: 950;
+    }
+
+    .timer-copy {
+      display: grid;
+      gap: 10px;
+    }
+
+    .timer-copy p {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .timer-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .auth-panel {
+      display: none;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .auth-panel.open {
+      display: grid;
+    }
+
+    .auth-panel.inline {
+      display: grid;
+      margin: 12px 0 14px;
+      padding: 14px;
+      border: 1px solid rgba(61,219,217,.24);
+      border-radius: 8px;
+      background: rgba(7,17,31,.42);
+    }
+
+    .auth-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .auth-title span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .auth-panel input {
+      width: 100%;
+    }
+
+    .table-wrap {
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #173052;
+      color: #b9d5f1;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    td {
+      background: rgba(8,20,36,.48);
+    }
+
+    .cell-center {
+      text-align: center;
+    }
+
+    .check {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 1px solid #385978;
+      background: #07111f;
+      color: transparent;
+      font-weight: 950;
+    }
+
+    .check.on {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      color: #07111f;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 23px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: rgba(39,168,255,.16);
+      color: #bfe6ff;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .pill.hot { background: rgba(255,88,112,.17); color: #ffc3cc; }
+    .pill.ok { background: rgba(53,224,123,.17); color: #bdf7d4; }
+    .pill.warn { background: rgba(255,159,49,.17); color: #ffd7a8; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr .8fr auto;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    input, select {
+      min-width: 0;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #07111f;
+      color: var(--text);
+      padding: 0 10px;
+      outline: 0;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(39,168,255,.16);
+    }
+
+    .mini-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      background: rgba(255,88,112,.13);
+      color: #ffc2ca;
+      font-weight: 950;
+    }
+
+    .bars {
+      display: grid;
+      gap: 10px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 100px 1fr 48px;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .bar {
+      height: 18px;
+      overflow: hidden;
+      border-radius: 5px;
+      background: #07111f;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--orange), var(--pink));
+    }
+
+    .pie {
+      width: 180px;
+      height: 180px;
+      margin: 6px auto;
+      border-radius: 50%;
+      background: conic-gradient(var(--green) 0deg, var(--green) 120deg, var(--blue) 120deg, var(--blue) 230deg, var(--orange) 230deg, var(--orange) 300deg, var(--pink) 300deg);
+      box-shadow: inset 0 0 0 34px var(--panel), 0 0 30px rgba(39,168,255,.18);
+    }
+
+    .review-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .review-item {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(7,17,31,.5);
+    }
+
+    .review-item.done {
+      border-color: rgba(53,224,123,.4);
+      background: rgba(53,224,123,.08);
+    }
+
+    .day-board {
+      display: grid;
+      grid-template-columns: 90px repeat(4, minmax(160px, 1fr));
+      gap: 1px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--line);
+    }
+
+    .time-cell, .plan-cell {
+      min-height: 58px;
+      padding: 9px;
+      background: rgba(8,20,36,.9);
+    }
+
+    .time-cell {
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    .plan-cell input {
+      width: 100%;
+      height: 34px;
+      border: 0;
+      background: transparent;
+      padding: 0;
+    }
+
+    @media (max-width: 1050px) {
+      .app { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      nav {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .side-card { display: none; }
+      .dashboard-grid, .two, .three {
+        grid-template-columns: 1fr;
+      }
+      .command-grid, .achievement-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .main { padding: 14px; }
+      aside { padding: 14px; }
+      header { align-items: flex-start; flex-direction: column; }
+      nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .form-row { grid-template-columns: 1fr; }
+      .top-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .top-actions .primary { grid-column: span 2; }
+      .hero-strip { grid-template-columns: 1fr; }
+      .command-grid, .achievement-grid, .mood-row { grid-template-columns: 1fr; }
+      .timer-panel { grid-template-columns: 1fr; }
+      .timer-face { margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="logo">
+        <div class="mark">T</div>
+        <div>
+          <h1>Мой планер</h1>
+          <span>день • привычки • задачи • деньги</span>
+        </div>
+      </div>
+      <nav id="tabs">
+        <button class="tab active" data-view="overview">▣ Главная</button>
+        <button class="tab" data-view="day">◴ День</button>
+        <button class="tab" data-view="week">▦ Неделя</button>
+        <button class="tab" data-view="habits">✓ Привычки</button>
+        <button class="tab" data-view="tasks">☰ Задачи</button>
+        <button class="tab" data-view="finance">₸ Деньги</button>
+        <button class="tab" data-view="review">★ Итоги</button>
+      </nav>
+      <div class="side-card">
+        <strong>Игровой прогресс</strong>
+        <div class="meter"><span id="sideProgress"></span></div>
+        <p id="sideProgressText" style="margin-top:8px;color:var(--muted);font-size:13px">0% недели закрыто</p>
+        <div class="auth-panel" id="authPanel">
+          <input id="authLogin" autocomplete="username" placeholder="ник">
+          <input id="authPassword" type="password" autocomplete="current-password" placeholder="пароль">
+          <button class="btn primary" id="loginBtn">Войти</button>
+          <button class="btn" id="registerBtn">Создать аккаунт</button>
+        </div>
+      </div>
+    </aside>
+
+    <section class="main">
+      <header>
+        <div class="title">
+          <h2 id="pageTitle">Главная</h2>
+          <p id="pageSub">Коротко: что сделано, что важно и как идут дела.</p>
+        </div>
+        <div class="top-actions">
+          <button class="btn" id="seedBtn">Пример</button>
+          <button class="btn" id="printBtn">Печать</button>
+          <button class="btn" id="accountBtn">Аккаунт</button>
+          <button class="btn" id="importBtn">Импорт</button>
+          <input id="importFile" type="file" accept="application/json" hidden>
+          <button class="btn primary" id="exportBtn">Экспорт</button>
+        </div>
+      </header>
+
+      <section class="hero-strip">
+        <div>
+          <h3 id="dailyLine">Начни с одного простого шага</h3>
+          <p id="dailyHint">Выбери главный фокус, закрой пару маленьких дел и обнови трекеры.</p>
+          <p id="syncStatus" style="margin-top:6px;color:var(--cyan);font-size:12px;font-weight:800">Локальное сохранение</p>
+        </div>
+        <input class="focus-input" id="mainFocus" placeholder="Главное на эту неделю">
+      </section>
+
+      <section class="auth-panel inline" id="welcomeAuth">
+        <div class="auth-title">
+          <strong>Сохранить прогресс</strong>
+          <span>ник + пароль</span>
+        </div>
+        <input id="welcomeLogin" autocomplete="username" placeholder="ник">
+        <input id="welcomePassword" type="password" autocomplete="current-password" placeholder="пароль">
+        <button class="btn primary" id="welcomeRegister">Создать аккаунт</button>
+        <button class="btn" id="welcomeSignIn">Войти</button>
+      </section>
+
+      <section class="command-grid">
+        <button class="command" data-jump="day"><strong>День</strong><span>план по времени и фокус-таймер</span></button>
+        <button class="command" data-jump="habits"><strong>Привычки</strong><span>отметки на каждый день месяца</span></button>
+        <button class="command" data-jump="tasks"><strong>Задачи</strong><span>список дел и приоритеты</span></button>
+        <button class="command" data-jump="finance"><strong>Деньги</strong><span>доходы, расходы и баланс</span></button>
+      </section>
+
+      <section class="view active" id="overview">
+        <div class="grid dashboard-grid">
+          <article class="card kpi">
+            <div class="card-head"><h3>Неделя</h3><span>прогресс</span></div>
+            <div class="card-body">
+              <div class="value" id="kpiProductivity">0%</div>
+              <div class="label">задачи + привычки + итоги</div>
+              <div class="spark" id="sparkProductivity"></div>
+            </div>
+          </article>
+          <article class="card kpi">
+            <div class="card-head"><h3>Привычки</h3><span>месяц</span></div>
+            <div class="card-body">
+              <div class="value" id="kpiHabits">0</div>
+              <div class="label">отметок за месяц</div>
+              <div class="spark" id="sparkHabits"></div>
+            </div>
+          </article>
+          <article class="card kpi">
+            <div class="card-head"><h3>Задачи</h3><span>фокус</span></div>
+            <div class="card-body">
+              <div class="value" id="kpiTasks">0/0</div>
+              <div class="label">готово из общего списка</div>
+              <div class="spark" id="sparkTasks"></div>
+            </div>
+          </article>
+          <article class="card kpi">
+            <div class="card-head"><h3>Баланс</h3><span>₸</span></div>
+            <div class="card-body">
+              <div class="value" id="kpiBalance">0</div>
+              <div class="label">доходы минус расходы</div>
+              <div class="spark" id="sparkMoney"></div>
+            </div>
+          </article>
+        </div>
+
+        <div class="grid two" style="margin-top:14px">
+          <article class="card">
+            <div class="card-head"><h3>Привычки за месяц</h3><span>мини-таблица</span></div>
+            <div class="card-body table-wrap" id="habitPreview"></div>
+          </article>
+          <article class="card">
+            <div class="card-head"><h3>Куда уходит внимание</h3><span>разделы задач</span></div>
+            <div class="card-body">
+              <div class="pie" id="focusPie"></div>
+              <div class="bars" id="categoryBars"></div>
+            </div>
+          </article>
+        </div>
+
+        <div class="grid two" style="margin-top:14px">
+          <article class="card">
+            <div class="card-head"><h3>Общий прогресс</h3><span>неделя</span></div>
+            <div class="card-body">
+              <div class="ring" id="weekRing"><strong id="ringValue">0%</strong></div>
+              <div class="mood-row" id="moodRow">
+                <button class="mood-btn" data-mood="1" title="Тяжело">1</button>
+                <button class="mood-btn" data-mood="2" title="Нормально">2</button>
+                <button class="mood-btn" data-mood="3" title="Спокойно">3</button>
+                <button class="mood-btn" data-mood="4" title="Хорошо">4</button>
+                <button class="mood-btn" data-mood="5" title="Отлично">5</button>
+              </div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head"><h3>Достижения</h3><span>приятные отметки</span></div>
+            <div class="card-body achievement-grid" id="achievements"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="day">
+        <article class="card">
+          <div class="card-head"><h3>План дня</h3><span>утро • день • вечер • база</span></div>
+          <div class="card-body">
+            <div class="timer-panel">
+              <div class="timer-face" id="timerFace">25:00</div>
+              <div class="timer-copy">
+                <h3>Фокус-сессия</h3>
+                <p>Запусти таймер, выбери одно дело и не переключайся до сигнала.</p>
+                <div class="timer-actions">
+                  <button class="btn primary" id="timerStart">Старт</button>
+                  <button class="btn" id="timerPause">Пауза</button>
+                  <button class="btn" id="timerReset">Сброс</button>
+                </div>
+              </div>
+            </div>
+            <div class="day-board" id="dayBoard"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="view" id="week">
+        <article class="card">
+          <div class="card-head"><h3>Неделя по полочкам</h3><span>7 дней</span></div>
+          <div class="card-body table-wrap" id="weekTable"></div>
+        </article>
+      </section>
+
+      <section class="view" id="habits">
+        <article class="card">
+          <div class="card-head"><h3>Трекер привычек</h3><span>31 день</span></div>
+          <div class="card-body">
+            <div class="form-row">
+              <input id="habitName" placeholder="Новая привычка">
+              <select id="habitColor">
+                <option value="green">Зелёная</option>
+                <option value="blue">Синяя</option>
+                <option value="orange">Оранжевая</option>
+                <option value="pink">Розовая</option>
+              </select>
+              <input id="habitGoal" type="number" min="1" max="31" value="21" title="Цель">
+              <button class="btn primary" id="addHabit">Добавить</button>
+            </div>
+            <div class="table-wrap" id="habitsTable"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="view" id="tasks">
+        <article class="card">
+          <div class="card-head"><h3>Трекер задач</h3><span>приоритеты</span></div>
+          <div class="card-body">
+            <div class="form-row">
+              <input id="taskName" placeholder="Новая задача">
+              <select id="taskArea">
+                <option>Работа</option>
+                <option>Дом</option>
+                <option>Учёба</option>
+                <option>Здоровье</option>
+                <option>Семья</option>
+              </select>
+              <select id="taskPriority">
+                <option value="hot">Срочно</option>
+                <option value="normal">Важно</option>
+                <option value="low">Позже</option>
+              </select>
+              <button class="btn primary" id="addTask">Добавить</button>
+            </div>
+            <div class="table-wrap" id="tasksTable"></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="view" id="finance">
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head"><h3>Деньги</h3><span>доходы и расходы в ₸</span></div>
+            <div class="card-body">
+              <div class="form-row">
+                <input id="moneyTitle" placeholder="Описание">
+                <select id="moneyType">
+                  <option value="income">Доход</option>
+                  <option value="expense">Расход</option>
+                </select>
+                <input id="moneyAmount" type="number" placeholder="Сумма">
+                <button class="btn primary" id="addMoney">Добавить</button>
+              </div>
+              <div class="table-wrap" id="moneyTable"></div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head"><h3>Расходы</h3><span>по сумме</span></div>
+            <div class="card-body">
+              <div class="bars" id="moneyBars"></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="review">
+        <div class="grid three">
+          <article class="card">
+            <div class="card-head"><h3>Итоги недели</h3><span>чеклист</span></div>
+            <div class="card-body review-list" id="reviewList"></div>
+          </article>
+          <article class="card">
+            <div class="card-head"><h3>Главный вывод</h3><span>заметка</span></div>
+            <div class="card-body">
+              <input id="weekWin" placeholder="Что получилось лучше всего?">
+              <input id="weekProblem" style="margin-top:10px" placeholder="Что мешало?">
+              <input id="weekNext" style="margin-top:10px" placeholder="Что улучшить на следующей неделе?">
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head"><h3>Уровень</h3><span>game mode</span></div>
+            <div class="card-body">
+              <div class="value" id="levelValue" style="font-size:48px;font-weight:950">LVL 1</div>
+              <p id="levelText" style="margin-top:10px;color:var(--muted)">Закрывай задачи и привычки, чтобы прокачивать неделю.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>window.PLANNER_SUPABASE = { url: "https://afqggaolntgonaspmhjy.supabase.co", anonKey: "sb_publishable_3DkFAP-UBbQIu7V0kyuD6Q_PeyZHTHL" };</script>
+  <script>
+    const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+    const COLORS = { green: "var(--green)", blue: "var(--blue)", orange: "var(--orange)", pink: "var(--pink)" };
+    const TITLES = {
+      overview: ["Главная", "Коротко: что сделано, что важно и как идут дела."],
+      day: ["День", "План по времени, фокус и короткая рабочая сессия."],
+      week: ["Неделя", "Все дни недели на одном экране."],
+      habits: ["Привычки", "Отмечай повторяющиеся дела и следи за серией."],
+      tasks: ["Задачи", "Обычный список дел с приоритетами."],
+      finance: ["Деньги", "Доходы, расходы и баланс в тенге."],
+      review: ["Итоги", "Коротко закрыть неделю и выбрать следующий шаг."]
+    };
+
+    const $ = selector => document.querySelector(selector);
+    const storeKey = "timeplaners-like-dashboard-v1";
+    const syncStoreKey = `${storeKey}-sync-code`;
+    const query = new URLSearchParams(location.search);
+    let syncCode = cleanSyncCode(query.get("sync") || "");
+    let accountEmail = "";
+    const supabaseConfig = window.PLANNER_SUPABASE || {};
+    const supabaseReady = !!window.supabase?.createClient && /^https:\/\/.+\.supabase\.co$/.test(supabaseConfig.url || "") && !String(supabaseConfig.anonKey || "").includes("PASTE_");
+    const supabaseClient = supabaseReady ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey) : null;
+    let syncTimer = null;
+    let syncReady = false;
+    let state = load();
+    let timerSeconds = 25 * 60;
+    let timerHandle = null;
+
+    function defaultState() {
+      return {
+        habits: [
+          { id: id(), name: "Сон 7+ часов", color: "blue", goal: 24, marks: [1,2,3,5,6,8,9,10,12,13,14,17,18,19,21,22,24,25] },
+          { id: id(), name: "Тренировка", color: "green", goal: 16, marks: [1,3,5,8,10,12,15,17,20,22,24] },
+          { id: id(), name: "Без сахара", color: "orange", goal: 21, marks: [2,3,4,6,7,9,11,12,15,16,18,20,21,23] },
+          { id: id(), name: "Чтение", color: "pink", goal: 18, marks: [1,4,5,6,8,9,13,14,16,18,19,22,24,25] }
+        ],
+        tasks: [
+          { id: id(), name: "Собрать план на неделю", area: "Работа", priority: "hot", done: true },
+          { id: id(), name: "Проверить расходы", area: "Дом", priority: "normal", done: false },
+          { id: id(), name: "Запланировать отдых", area: "Здоровье", priority: "normal", done: true },
+          { id: id(), name: "Позвонить близким", area: "Семья", priority: "low", done: false }
+        ],
+        money: [
+          { id: id(), title: "Доход", type: "income", amount: 450000 },
+          { id: id(), title: "Продукты", type: "expense", amount: 65000 },
+          { id: id(), title: "Дом", type: "expense", amount: 120000 },
+          { id: id(), title: "Транспорт", type: "expense", amount: 18000 },
+          { id: id(), title: "Обучение", type: "expense", amount: 30000 }
+        ],
+        day: {},
+        review: [true, true, false, false, false],
+        notes: { win: "", problem: "", next: "" },
+        focus: "Собрать спокойную и продуктивную неделю",
+        mood: 3
+      };
+    }
+
+    function id() {
+      return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(storeKey)) || defaultState();
+      } catch {
+        return defaultState();
+      }
+    }
+
+    function save() {
+      localStorage.setItem(storeKey, JSON.stringify(state));
+      queueRemoteSave();
+      queueAccountSave();
+    }
+
+    function cleanSyncCode(value) {
+      const code = String(value || "").trim().toLowerCase();
+      return /^[a-z0-9_-]{3,40}$/.test(code) ? code : "";
+    }
+
+    async function loadRemoteState() {
+      if (!syncCode) return false;
+      try {
+        const res = await fetch(`/api/profile/${encodeURIComponent(syncCode)}`, { cache: "no-store" });
+        if (!res.ok) throw new Error("sync_load_failed");
+        const data = await res.json();
+        if (data.exists && data.state) {
+          state = data.state;
+          normalizeState();
+          localStorage.setItem(storeKey, JSON.stringify(state));
+        } else {
+          normalizeState();
+          await saveRemoteNow();
+        }
+        syncReady = true;
+        localStorage.setItem(syncStoreKey, syncCode);
+        setSyncStatus(`Синхронизация: ${syncCode}`);
+        return true;
+      } catch {
+        syncReady = false;
+        setSyncStatus(`Нет связи с синхронизацией: ${syncCode}`);
+        return false;
+      }
+    }
+
+    function queueRemoteSave() {
+      if (!syncCode || !syncReady) return;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(saveRemoteNow, 450);
+    }
+
+    async function saveRemoteNow() {
+      if (!syncCode) return;
+      try {
+        const res = await fetch(`/api/profile/${encodeURIComponent(syncCode)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(state)
+        });
+        if (!res.ok) throw new Error("sync_save_failed");
+        syncReady = true;
+        setSyncStatus(`Синхронизация: ${syncCode} · сохранено`);
+      } catch {
+        syncReady = false;
+        setSyncStatus(`Нет связи с синхронизацией: ${syncCode}`);
+      }
+    }
+
+    function setSyncStatus(text) {
+      const el = $("#syncStatus");
+      if (el) el.textContent = text;
+    }
+
+    function normalizeLogin(value) {
+      return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_.-]/g, "");
+    }
+
+    function loginToEmail(login) {
+      return `${normalizeLogin(login)}@planner.local`;
+    }
+
+    function emailToLogin(email) {
+      return String(email || "").replace(/@planner\.local$/i, "");
+    }
+
+    async function loadAccountState() {
+      if (!supabaseClient) return false;
+      try {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const user = sessionData.session?.user;
+        if (!user) return false;
+        accountEmail = emailToLogin(user.email);
+        $("#welcomeAuth").style.display = "none";
+        const { data, error } = await supabaseClient
+          .from("profiles")
+          .select("state")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (error) throw error;
+        if (data?.state) {
+          state = data.state;
+          normalizeState();
+          localStorage.setItem(storeKey, JSON.stringify(state));
+        } else {
+          normalizeState();
+          await saveAccountNow();
+        }
+        setSyncStatus(`Аккаунт: ${accountEmail} · сохранение включено`);
+        return true;
+      } catch {
+        accountEmail = "";
+        setSyncStatus("Аккаунт: не удалось загрузить данные Supabase");
+        return false;
+      }
+    }
+
+    function queueAccountSave() {
+      if (!supabaseClient) return;
+      clearTimeout(window.__accountSaveTimer);
+      window.__accountSaveTimer = setTimeout(saveAccountNow, 450);
+    }
+
+    async function saveAccountNow() {
+      if (!supabaseClient) return;
+      try {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const user = sessionData.session?.user;
+        if (!user) return;
+        const { error } = await supabaseClient
+          .from("profiles")
+          .upsert({ user_id: user.id, state, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+        if (error) throw error;
+        setSyncStatus(`Аккаунт: ${accountEmail || "вход выполнен"} · сохранено`);
+      } catch {
+        setSyncStatus("Аккаунт: не удалось сохранить в Supabase");
+      }
+    }
+
+    async function auth(mode) {
+      if (!supabaseClient) {
+        alert("Сначала вставь Supabase URL и anon key в supabase-config.js");
+        return;
+      }
+      const login = normalizeLogin($("#authLogin").value || $("#welcomeLogin").value);
+      const email = loginToEmail(login);
+      const password = $("#authPassword").value || $("#welcomePassword").value;
+      if (login.length < 3) {
+        alert("Ник должен быть хотя бы 3 символа: латиница, цифры, точка, дефис или подчёркивание.");
+        return;
+      }
+      if (password.length < 6) {
+        alert("Пароль должен быть минимум 6 символов.");
+        return;
+      }
+      try {
+        const result = mode === "register"
+          ? await supabaseClient.auth.signUp({ email, password, options: { data: { login } } })
+          : await supabaseClient.auth.signInWithPassword({ email, password });
+        if (result.error) throw result.error;
+        accountEmail = login;
+        $("#authPanel").classList.remove("open");
+        $("#welcomeAuth").style.display = "none";
+        await loadAccountState();
+        render();
+      } catch (err) {
+        alert(mode === "register" ? "Не получилось создать аккаунт. Возможно, такой ник уже занят или Supabase ещё не настроен." : "Не получилось войти. Проверь ник и пароль.");
+      }
+    }
+
+    function normalizeState() {
+      const fresh = defaultState();
+      state.habits ||= fresh.habits;
+      state.tasks ||= fresh.tasks;
+      state.money ||= fresh.money;
+      state.day ||= {};
+      state.review ||= fresh.review;
+      state.notes ||= { win: "", problem: "", next: "" };
+      state.focus ||= "Собрать спокойную и продуктивную неделю";
+      if (new RegExp("\\u043c\\u0430\\u043c", "i").test(state.focus)) {
+        state.focus = "Собрать спокойную и продуктивную неделю";
+      }
+      state.mood ||= 3;
+    }
+
+    function pct(part, total) {
+      return total ? Math.round(part / total * 100) : 0;
+    }
+
+    function metrics() {
+      const habitMarks = state.habits.reduce((sum, h) => sum + h.marks.length, 0);
+      const habitTotal = state.habits.length * 31;
+      const doneTasks = state.tasks.filter(t => t.done).length;
+      const reviewDone = state.review.filter(Boolean).length;
+      const habitPct = pct(habitMarks, habitTotal);
+      const taskPct = pct(doneTasks, state.tasks.length);
+      const reviewPct = pct(reviewDone, state.review.length);
+      const productivity = Math.round((habitPct + taskPct + reviewPct) / 3);
+      const income = state.money.filter(m => m.type === "income").reduce((s, m) => s + Number(m.amount || 0), 0);
+      const expense = state.money.filter(m => m.type === "expense").reduce((s, m) => s + Number(m.amount || 0), 0);
+      const bestStreak = state.habits.reduce((best, habit) => Math.max(best, streak(habit.marks)), 0);
+      return { habitMarks, habitPct, doneTasks, taskPct, reviewDone, reviewPct, productivity, income, expense, balance: income - expense, bestStreak };
+    }
+
+    function streak(marks) {
+      const sorted = [...marks].sort((a, b) => a - b);
+      let best = 0;
+      let run = 0;
+      let prev = 0;
+      sorted.forEach(day => {
+        run = day === prev + 1 ? run + 1 : 1;
+        best = Math.max(best, run);
+        prev = day;
+      });
+      return best;
+    }
+
+    function render() {
+      renderOverview();
+      renderHabits();
+      renderTasks();
+      renderFinance();
+      renderDay();
+      renderWeek();
+      renderReview();
+      renderMotivation();
+      const m = metrics();
+      $("#sideProgress").style.width = `${m.productivity}%`;
+      $("#sideProgressText").textContent = `${m.productivity}% недели закрыто`;
+      $("#levelValue").textContent = `LVL ${Math.max(1, Math.floor(m.productivity / 20) + 1)}`;
+      save();
+    }
+
+    function renderOverview() {
+      const m = metrics();
+      $("#kpiProductivity").textContent = `${m.productivity}%`;
+      $("#kpiHabits").textContent = m.habitMarks;
+      $("#kpiTasks").textContent = `${m.doneTasks}/${state.tasks.length}`;
+      $("#kpiBalance").textContent = formatMoney(m.balance);
+      renderSpark("#sparkProductivity", [18,42,35,55,62,70,m.productivity]);
+      renderSpark("#sparkHabits", state.habits.map(h => h.marks.length));
+      renderSpark("#sparkTasks", state.tasks.map(t => t.done ? 88 : 26));
+      renderSpark("#sparkMoney", state.money.map(money => Math.min(95, Math.abs(money.amount) / 1000)));
+      $("#habitPreview").innerHTML = habitTable(true);
+      renderCategoryBars();
+    }
+
+    function renderMotivation() {
+      const m = metrics();
+      $("#mainFocus").value = state.focus || "";
+      $("#weekRing").style.setProperty("--p", m.productivity);
+      $("#ringValue").textContent = `${m.productivity}%`;
+      const lines = [
+        "Начни с одного простого шага",
+        "Неделя уже выглядит спокойнее",
+        "Маленькие отметки складываются в порядок",
+        "Фокус есть, осталось закрыть следующий шаг",
+        "Все важное собрано в одном месте"
+      ];
+      $("#dailyLine").textContent = lines[Math.min(lines.length - 1, Math.max(0, Number(state.mood || 3) - 1))];
+      $("#dailyHint").textContent = `Фокус: ${state.focus || "выбери главное"} · серия ${m.bestStreak} дн. · баланс ${formatMoney(m.balance)}`;
+      document.querySelectorAll(".mood-btn").forEach(btn => {
+        btn.classList.toggle("active", Number(btn.dataset.mood) === Number(state.mood || 3));
+      });
+      const achievements = [
+        { ok: m.productivity >= 25, title: "Старт недели", text: "25% общего прогресса" },
+        { ok: m.bestStreak >= 5, title: "Серия привычек", text: "5 дней подряд" },
+        { ok: m.taskPct >= 50, title: "Задачи под контролем", text: "половина списка закрыта" },
+        { ok: m.balance > 0, title: "Деньги в плюсе", text: "баланс положительный" },
+        { ok: m.reviewPct >= 80, title: "Осознанная неделя", text: "итоги почти готовы" },
+        { ok: m.productivity >= 80, title: "Режим машины", text: "80% недели закрыто" }
+      ];
+      $("#achievements").innerHTML = achievements.map(item => `
+        <div class="achievement ${item.ok ? "unlocked" : ""}">
+          <strong>${item.ok ? "✓ " : ""}${item.title}</strong>
+          <span>${item.text}</span>
+        </div>
+      `).join("");
+      renderTimer();
+    }
+
+    function renderTimer() {
+      const total = 25 * 60;
+      const done = Math.round((total - timerSeconds) / total * 100);
+      const minutes = Math.floor(timerSeconds / 60);
+      const seconds = timerSeconds % 60;
+      $("#timerFace").textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      $("#timerFace").style.setProperty("--timer", `${done}%`);
+    }
+
+    function startTimer() {
+      if (timerHandle) return;
+      timerHandle = setInterval(() => {
+        timerSeconds = Math.max(0, timerSeconds - 1);
+        renderTimer();
+        if (timerSeconds === 0) {
+          clearInterval(timerHandle);
+          timerHandle = null;
+          state.review[3] = true;
+          render();
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      clearInterval(timerHandle);
+      timerHandle = null;
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timerSeconds = 25 * 60;
+      renderTimer();
+    }
+
+    function renderSpark(selector, values) {
+      const max = Math.max(...values, 1);
+      $(selector).innerHTML = values.map(v => `<i style="height:${Math.max(12, v / max * 44)}px"></i>`).join("");
+    }
+
+    function renderCategoryBars() {
+      const areas = {};
+      state.tasks.forEach(t => areas[t.area] = (areas[t.area] || 0) + 1);
+      const max = Math.max(...Object.values(areas), 1);
+      $("#categoryBars").innerHTML = Object.entries(areas).map(([name, value]) => `
+        <div class="bar-row"><span>${name}</span><div class="bar"><span style="width:${value / max * 100}%"></span></div><strong>${value}</strong></div>
+      `).join("");
+    }
+
+    function habitTable(preview = false) {
+      const days = Array.from({ length: preview ? 14 : 31 }, (_, i) => i + 1);
+      return `<table>
+        <thead><tr><th>Привычка</th>${days.map(d => `<th class="cell-center">${d}</th>`).join("")}<th>%</th>${preview ? "" : "<th></th>"}</tr></thead>
+        <tbody>${state.habits.map(h => `
+          <tr>
+            <td><span class="pill" style="background:${COLORS[h.color]}22;color:${COLORS[h.color]}">${escapeHtml(h.name)}</span></td>
+            ${days.map(d => `<td class="cell-center"><button class="check ${h.marks.includes(d) ? "on" : ""}" data-habit="${h.id}" data-day="${d}">✓</button></td>`).join("")}
+            <td><strong>${pct(h.marks.length, h.goal)}%</strong></td>
+            ${preview ? "" : `<td><button class="mini-btn" data-del-habit="${h.id}">×</button></td>`}
+          </tr>
+        `).join("")}</tbody>
+      </table>`;
+    }
+
+    function renderHabits() {
+      $("#habitsTable").innerHTML = habitTable(false);
+    }
+
+    function renderTasks() {
+      const priorityLabel = { hot: "Срочно", normal: "Важно", low: "Позже" };
+      const priorityClass = { hot: "hot", normal: "warn", low: "" };
+      $("#tasksTable").innerHTML = `<table>
+        <thead><tr><th>Готово</th><th>Задача</th><th>Раздел</th><th>Приоритет</th><th></th></tr></thead>
+        <tbody>${state.tasks.map(t => `
+          <tr>
+            <td class="cell-center"><button class="check ${t.done ? "on" : ""}" data-task="${t.id}">✓</button></td>
+            <td>${escapeHtml(t.name)}</td>
+            <td><span class="pill">${escapeHtml(t.area)}</span></td>
+            <td><span class="pill ${priorityClass[t.priority]}">${priorityLabel[t.priority]}</span></td>
+            <td><button class="mini-btn" data-del-task="${t.id}">×</button></td>
+          </tr>
+        `).join("")}</tbody>
+      </table>`;
+    }
+
+    function renderFinance() {
+      $("#moneyTable").innerHTML = `<table>
+        <thead><tr><th>Тип</th><th>Описание</th><th>Сумма</th><th></th></tr></thead>
+        <tbody>${state.money.map(m => `
+          <tr>
+            <td><span class="pill ${m.type === "income" ? "ok" : "hot"}">${m.type === "income" ? "Доход" : "Расход"}</span></td>
+            <td>${escapeHtml(m.title)}</td>
+            <td><strong>${formatMoney(m.amount)}</strong></td>
+            <td><button class="mini-btn" data-del-money="${m.id}">×</button></td>
+          </tr>
+        `).join("")}</tbody>
+      </table>`;
+      const expenses = state.money.filter(m => m.type === "expense");
+      const max = Math.max(...expenses.map(m => Number(m.amount)), 1);
+      $("#moneyBars").innerHTML = expenses.map(m => `
+        <div class="bar-row"><span>${escapeHtml(m.title)}</span><div class="bar"><span style="width:${Number(m.amount) / max * 100}%"></span></div><strong>${formatMoney(m.amount)}</strong></div>
+      `).join("");
+    }
+
+    function renderDay() {
+      const zones = ["Утро", "День", "Вечер", "База"];
+      const times = ["07:00", "09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"];
+      $("#dayBoard").innerHTML = `<div class="time-cell"></div>${zones.map(z => `<div class="time-cell">${z}</div>`).join("")}` +
+        times.map(time => `<div class="time-cell">${time}</div>${zones.map(zone => {
+          const key = `${time}-${zone}`;
+          return `<div class="plan-cell"><input data-day-note="${key}" value="${escapeAttr(state.day[key] || "")}" placeholder="..."></div>`;
+        }).join("")}`).join("");
+    }
+
+    function renderWeek() {
+      $("#weekTable").innerHTML = `<table>
+        <thead><tr><th>День</th><th>Фокус</th><th>Задачи</th><th>Привычки</th><th>Итог</th></tr></thead>
+        <tbody>${DAYS.map((day, i) => {
+          const dayTasks = state.tasks.filter((_, index) => index % 7 === i);
+          const habits = state.habits.filter(h => h.marks.includes(i + 1)).length;
+          return `<tr>
+            <td><strong>${day}</strong></td>
+            <td>${["Фокус", "Дом", "Глубокая работа", "Проверка", "Деньги", "Дом", "Отдых"][i]}</td>
+            <td>${dayTasks.map(t => `<span class="pill ${t.done ? "ok" : ""}">${escapeHtml(t.name)}</span>`).join(" ") || "<span class='pill'>свободно</span>"}</td>
+            <td>${habits}/${state.habits.length}</td>
+            <td>${habits >= 2 ? "<span class='pill ok'>норм</span>" : "<span class='pill warn'>добрать</span>"}</td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table>`;
+    }
+
+    function renderReview() {
+      const items = ["Посмотреть задачи", "Отметить привычки", "Проверить деньги", "Записать вывод", "Выбрать фокус следующей недели"];
+      $("#reviewList").innerHTML = items.map((item, i) => `
+        <div class="review-item ${state.review[i] ? "done" : ""}">
+          <button class="check ${state.review[i] ? "on" : ""}" data-review="${i}">✓</button>
+          <strong>${item}</strong>
+        </div>
+      `).join("");
+      $("#weekWin").value = state.notes.win || "";
+      $("#weekProblem").value = state.notes.problem || "";
+      $("#weekNext").value = state.notes.next || "";
+    }
+
+    function formatMoney(value) {
+      return `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(Number(value || 0))} ₸`;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/"/g, "&quot;");
+    }
+
+    document.addEventListener("click", event => {
+      const target = event.target;
+      const tab = target.closest(".tab");
+      if (tab) {
+        activateView(tab.dataset.view);
+      }
+      const command = target.closest(".command");
+      if (command) {
+        activateView(command.dataset.jump);
+      }
+      if (target.dataset.mood) {
+        state.mood = Number(target.dataset.mood);
+        render();
+      }
+      if (target.dataset.habit) {
+        const habit = state.habits.find(h => h.id === target.dataset.habit);
+        const day = Number(target.dataset.day);
+        habit.marks = habit.marks.includes(day) ? habit.marks.filter(d => d !== day) : [...habit.marks, day].sort((a,b) => a-b);
+        render();
+      }
+      if (target.dataset.task) {
+        const task = state.tasks.find(t => t.id === target.dataset.task);
+        task.done = !task.done;
+        render();
+      }
+      if (target.dataset.review) {
+        const i = Number(target.dataset.review);
+        state.review[i] = !state.review[i];
+        render();
+      }
+      if (target.dataset.delHabit) {
+        state.habits = state.habits.filter(h => h.id !== target.dataset.delHabit);
+        render();
+      }
+      if (target.dataset.delTask) {
+        state.tasks = state.tasks.filter(t => t.id !== target.dataset.delTask);
+        render();
+      }
+      if (target.dataset.delMoney) {
+        state.money = state.money.filter(m => m.id !== target.dataset.delMoney);
+        render();
+      }
+    });
+
+    document.addEventListener("input", event => {
+      const key = event.target.dataset.dayNote;
+      if (key) {
+        state.day[key] = event.target.value;
+        save();
+      }
+      if (event.target.id === "weekWin") state.notes.win = event.target.value;
+      if (event.target.id === "weekProblem") state.notes.problem = event.target.value;
+      if (event.target.id === "weekNext") state.notes.next = event.target.value;
+      if (event.target.id === "mainFocus") state.focus = event.target.value;
+      save();
+    });
+
+    function activateView(view) {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      const tab = document.querySelector(`.tab[data-view="${view}"]`);
+      if (tab) tab.classList.add("active");
+      $(`#${view}`).classList.add("active");
+      $("#pageTitle").textContent = TITLES[view][0];
+      $("#pageSub").textContent = TITLES[view][1];
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    $("#addHabit").addEventListener("click", () => {
+      const name = $("#habitName").value.trim();
+      if (!name) return;
+      state.habits.push({ id: id(), name, color: $("#habitColor").value, goal: Number($("#habitGoal").value || 21), marks: [] });
+      $("#habitName").value = "";
+      render();
+    });
+
+    $("#addTask").addEventListener("click", () => {
+      const name = $("#taskName").value.trim();
+      if (!name) return;
+      state.tasks.push({ id: id(), name, area: $("#taskArea").value, priority: $("#taskPriority").value, done: false });
+      $("#taskName").value = "";
+      render();
+    });
+
+    $("#addMoney").addEventListener("click", () => {
+      const title = $("#moneyTitle").value.trim();
+      const amount = Number($("#moneyAmount").value);
+      if (!title || !amount) return;
+      state.money.push({ id: id(), title, type: $("#moneyType").value, amount });
+      $("#moneyTitle").value = "";
+      $("#moneyAmount").value = "";
+      render();
+    });
+
+    $("#seedBtn").addEventListener("click", () => {
+      state = defaultState();
+      render();
+    });
+
+    $("#printBtn").addEventListener("click", () => window.print());
+    $("#accountBtn").addEventListener("click", async () => {
+      const currentSession = supabaseClient ? (await supabaseClient.auth.getSession()).data.session : null;
+      if (currentSession) {
+        const leave = confirm(`Выйти из аккаунта ${accountEmail || ""}? Данные в аккаунте останутся.`);
+        if (!leave) return;
+        await supabaseClient.auth.signOut();
+        accountEmail = "";
+        $("#welcomeAuth").style.display = "";
+        setSyncStatus("Локальное сохранение · аккаунт отключён");
+        return;
+      }
+      $("#authPanel").classList.toggle("open");
+    });
+    $("#loginBtn").addEventListener("click", () => auth("login"));
+    $("#registerBtn").addEventListener("click", () => auth("register"));
+    $("#welcomeSignIn").addEventListener("click", () => {
+      $("#authLogin").value = $("#welcomeLogin").value;
+      $("#authPassword").value = $("#welcomePassword").value;
+      auth("login");
+    });
+    $("#welcomeRegister").addEventListener("click", () => {
+      $("#authLogin").value = $("#welcomeLogin").value;
+      $("#authPassword").value = $("#welcomePassword").value;
+      auth("register");
+    });
+    $("#exportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "life-tracker-data.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    $("#importBtn").addEventListener("click", () => $("#importFile").click());
+    $("#importFile").addEventListener("change", async event => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+        state = JSON.parse(await file.text());
+        normalizeState();
+        render();
+      } catch {
+        alert("Не получилось импортировать файл. Нужен JSON из этого планера.");
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    $("#timerStart").addEventListener("click", startTimer);
+    $("#timerPause").addEventListener("click", pauseTimer);
+    $("#timerReset").addEventListener("click", resetTimer);
+
+    async function init() {
+      normalizeState();
+      if (supabaseClient && await loadAccountState()) {
+        render();
+        return;
+      }
+      if (syncCode) {
+        setSyncStatus(`Подключаю синхронизацию: ${syncCode}`);
+        await loadRemoteState();
+      } else {
+        setSyncStatus("Локальное сохранение · создай аккаунт, чтобы синхронизировать телефон и компьютер");
+      }
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>

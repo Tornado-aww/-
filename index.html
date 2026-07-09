@@ -739,6 +739,48 @@
       background: var(--line);
     }
 
+    .day-tools {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .day-progress {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(7,17,31,.48);
+    }
+
+    .day-progress strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .day-progress-line {
+      height: 9px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(3,10,20,.75);
+    }
+
+    .day-progress-line span {
+      display: block;
+      height: 100%;
+      width: var(--day-progress, 0%);
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+      transition: width .25s ease;
+    }
+
+    .day-add {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 110px 110px auto;
+      gap: 8px;
+      align-items: center;
+    }
+
     .time-cell, .plan-cell {
       min-height: 58px;
       padding: 9px;
@@ -750,12 +792,64 @@
       font-weight: 850;
     }
 
-    .plan-cell input {
+    .plan-cell {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+    }
+
+    .slot-add {
+      display: grid;
+      grid-template-columns: 1fr 32px;
+      gap: 6px;
+    }
+
+    .slot-add input,
+    .day-add input,
+    .day-add select,
+    .day-item input {
       width: 100%;
       height: 34px;
       border: 0;
-      background: transparent;
+    }
+
+    .slot-add input {
+      background: rgba(3,10,20,.35);
+    }
+
+    .day-item {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr) 26px;
+      gap: 6px;
+      align-items: center;
+      padding: 6px;
+      border: 1px solid rgba(84,122,170,.28);
+      border-radius: 8px;
+      background: rgba(3,10,20,.32);
+    }
+
+    .day-item.done {
+      border-color: rgba(53,224,123,.34);
+      background: rgba(53,224,123,.08);
+    }
+
+    .day-item.done input {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    .slot-empty {
+      color: var(--muted);
+      font-size: 12px;
+      opacity: .78;
+    }
+
+    .slot-btn {
+      width: 32px;
+      height: 34px;
       padding: 0;
+      display: grid;
+      place-items: center;
     }
 
     @media (max-width: 1050px) {
@@ -794,6 +888,7 @@
       .command-grid, .achievement-grid, .mood-row { grid-template-columns: 1fr; }
       .timer-panel { grid-template-columns: 1fr; }
       .timer-face { margin: 0 auto; }
+      .day-tools, .day-add { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -958,6 +1053,32 @@
                   <button class="btn" id="timerPause">Пауза</button>
                   <button class="btn" id="timerReset">Сброс</button>
                 </div>
+              </div>
+            </div>
+            <div class="day-tools">
+              <div class="day-progress">
+                <strong id="dayProgressText">На сегодня пока нет дел</strong>
+                <div class="day-progress-line"><span id="dayProgressLine"></span></div>
+              </div>
+              <div class="day-add">
+                <input id="quickDayText" placeholder="Что нужно сделать сегодня?">
+                <select id="quickDayTime">
+                  <option>07:00</option>
+                  <option>09:00</option>
+                  <option>11:00</option>
+                  <option>13:00</option>
+                  <option>15:00</option>
+                  <option>17:00</option>
+                  <option>19:00</option>
+                  <option>21:00</option>
+                </select>
+                <select id="quickDayZone">
+                  <option>Утро</option>
+                  <option>День</option>
+                  <option>Вечер</option>
+                  <option>База</option>
+                </select>
+                <button class="btn primary" id="quickDayAdd">Добавить</button>
               </div>
             </div>
             <div class="day-board" id="dayBoard"></div>
@@ -1325,9 +1446,10 @@
     function isLegacyDemoState(candidate) {
       const names = list => new Set((list || []).map(item => item.name || item.title));
       const hasAll = (set, values) => values.every(value => set.has(value));
+      if (candidate.focus === "Собрать спокойную и продуктивную неделю") return true;
       return hasAll(names(candidate.habits), ["Сон 7+ часов", "Тренировка", "Без сахара", "Чтение"])
-        && hasAll(names(candidate.tasks), ["Собрать план на неделю", "Проверить расходы", "Запланировать отдых", "Позвонить близким"])
-        && hasAll(names(candidate.money), ["Доход", "Продукты", "Дом", "Транспорт", "Обучение"]);
+        || hasAll(names(candidate.tasks), ["Собрать план на неделю", "Проверить расходы", "Запланировать отдых", "Позвонить близким"])
+        || hasAll(names(candidate.money), ["Доход", "Продукты", "Дом", "Транспорт", "Обучение"]);
     }
 
     function normalizeState() {
@@ -1340,6 +1462,20 @@
       state.tasks ||= fresh.tasks;
       state.money ||= fresh.money;
       state.day ||= {};
+      Object.keys(state.day).forEach(key => {
+        const value = state.day[key];
+        if (typeof value === "string") {
+          state.day[key] = value.trim() ? [{ id: id(), text: value.trim(), done: false }] : [];
+        } else if (value && !Array.isArray(value)) {
+          state.day[key] = [{ id: value.id || id(), text: value.text || "", done: !!value.done }].filter(item => item.text.trim());
+        } else if (Array.isArray(value)) {
+          state.day[key] = value
+            .map(item => ({ id: item.id || id(), text: String(item.text || "").trim(), done: !!item.done }))
+            .filter(item => item.text);
+        } else {
+          state.day[key] = [];
+        }
+      });
       state.review ||= fresh.review;
       state.notes ||= { win: "", problem: "", next: "" };
       if (new RegExp("\\u043c\\u0430\\u043c", "i").test(state.focus)) {
@@ -1561,10 +1697,29 @@
     function renderDay() {
       const zones = ["Утро", "День", "Вечер", "База"];
       const times = ["07:00", "09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"];
+      const entries = Object.values(state.day || {}).flat();
+      const total = entries.length;
+      const done = entries.filter(item => item.done).length;
+      const progress = pct(done, total);
+      $("#dayProgressText").textContent = total ? `Готово ${done} из ${total} дел на день` : "На сегодня пока нет дел";
+      $("#dayProgressLine").style.setProperty("--day-progress", `${progress}%`);
       $("#dayBoard").innerHTML = `<div class="time-cell"></div>${zones.map(z => `<div class="time-cell">${z}</div>`).join("")}` +
         times.map(time => `<div class="time-cell">${time}</div>${zones.map(zone => {
           const key = `${time}-${zone}`;
-          return `<div class="plan-cell"><input data-day-note="${key}" value="${escapeAttr(state.day[key] || "")}" placeholder="..."></div>`;
+          const items = state.day[key] || [];
+          return `<div class="plan-cell">
+            ${items.length ? items.map(item => `
+              <div class="day-item ${item.done ? "done" : ""}">
+                <button class="check ${item.done ? "on" : ""}" data-day-done="${key}" data-day-item="${item.id}">✓</button>
+                <input data-day-edit="${key}" data-day-item="${item.id}" value="${escapeAttr(item.text)}" placeholder="дело">
+                <button class="mini-btn" data-day-del="${key}" data-day-item="${item.id}">×</button>
+              </div>
+            `).join("") : `<div class="slot-empty">свободно</div>`}
+            <div class="slot-add">
+              <input data-day-new="${key}" placeholder="добавить дело">
+              <button class="btn slot-btn" data-day-add="${key}">+</button>
+            </div>
+          </div>`;
         }).join("")}`).join("");
     }
 
@@ -1610,6 +1765,22 @@
       return escapeHtml(value).replace(/"/g, "&quot;");
     }
 
+    function addDayItem(key, text) {
+      const clean = String(text || "").trim();
+      if (!clean) return false;
+      state.day[key] ||= [];
+      state.day[key].push({ id: id(), text: clean, done: false });
+      return true;
+    }
+
+    function addQuickDayItem() {
+      const input = $("#quickDayText");
+      const key = `${$("#quickDayTime").value}-${$("#quickDayZone").value}`;
+      if (!addDayItem(key, input.value)) return;
+      input.value = "";
+      render();
+    }
+
     document.addEventListener("click", event => {
       const target = event.target;
       const tab = target.closest(".tab");
@@ -1640,6 +1811,20 @@
         state.review[i] = !state.review[i];
         render();
       }
+      if (target.dataset.dayDone) {
+        const items = state.day[target.dataset.dayDone] || [];
+        const item = items.find(entry => entry.id === target.dataset.dayItem);
+        if (item) item.done = !item.done;
+        render();
+      }
+      if (target.dataset.dayDel) {
+        state.day[target.dataset.dayDel] = (state.day[target.dataset.dayDel] || []).filter(entry => entry.id !== target.dataset.dayItem);
+        render();
+      }
+      if (target.dataset.dayAdd) {
+        const input = target.closest(".slot-add")?.querySelector(`[data-day-new="${target.dataset.dayAdd}"]`);
+        if (addDayItem(target.dataset.dayAdd, input?.value)) render();
+      }
       if (target.dataset.delHabit) {
         state.habits = state.habits.filter(h => h.id !== target.dataset.delHabit);
         render();
@@ -1655,9 +1840,11 @@
     });
 
     document.addEventListener("input", event => {
-      const key = event.target.dataset.dayNote;
-      if (key) {
-        state.day[key] = event.target.value;
+      const editKey = event.target.dataset.dayEdit;
+      if (editKey) {
+        const items = state.day[editKey] || [];
+        const item = items.find(entry => entry.id === event.target.dataset.dayItem);
+        if (item) item.text = event.target.value;
         save();
       }
       if (event.target.id === "weekWin") state.notes.win = event.target.value;
@@ -1665,6 +1852,18 @@
       if (event.target.id === "weekNext") state.notes.next = event.target.value;
       if (event.target.id === "mainFocus") state.focus = event.target.value;
       save();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key !== "Enter") return;
+      if (event.target.dataset.dayNew) {
+        event.preventDefault();
+        if (addDayItem(event.target.dataset.dayNew, event.target.value)) render();
+      }
+      if (event.target.id === "quickDayText") {
+        event.preventDefault();
+        addQuickDayItem();
+      }
     });
 
     function activateView(view) {
@@ -1703,6 +1902,8 @@
       $("#moneyAmount").value = "";
       render();
     });
+
+    $("#quickDayAdd").addEventListener("click", addQuickDayItem);
 
     $("#printBtn").addEventListener("click", () => window.print());
     $("#clearBtn").addEventListener("click", () => {

@@ -924,6 +924,11 @@
       aside { padding: 14px; }
       header { align-items: flex-start; flex-direction: column; }
       nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tab {
+        min-height: 38px;
+        padding: 0 9px;
+        font-size: 13px;
+      }
       .form-row { grid-template-columns: 1fr; }
       .top-actions {
         width: 100%;
@@ -960,6 +965,7 @@
         <button class="tab" data-view="tasks">☰ Задачи</button>
         <button class="tab" data-view="finance">₸ Деньги</button>
         <button class="tab" data-view="review">★ Итоги</button>
+        <button class="tab" data-view="account">◎ Аккаунт</button>
       </nav>
       <div class="side-card">
         <strong>Игровой прогресс</strong>
@@ -1237,6 +1243,25 @@
           </article>
         </div>
       </section>
+
+      <section class="view" id="account">
+        <article class="card">
+          <div class="card-head"><h3>Аккаунт</h3><span>сохранение на телефоне и компьютере</span></div>
+          <div class="card-body">
+            <div class="empty-state" id="accountStatusBox">Войди или создай аккаунт, чтобы прогресс сохранялся между устройствами.</div>
+            <div class="auth-panel inline" style="margin-top:14px">
+              <div class="auth-title">
+                <strong>Вход</strong>
+                <span>ник + пароль</span>
+              </div>
+              <input id="accountLogin" autocomplete="username" placeholder="ник">
+              <input id="accountPassword" type="password" autocomplete="current-password" placeholder="пароль">
+              <button class="btn primary" id="accountRegister">Создать аккаунт</button>
+              <button class="btn" id="accountSignIn">Войти</button>
+            </div>
+          </div>
+        </article>
+      </section>
     </section>
   </div>
 
@@ -1252,7 +1277,8 @@
       habits: ["Привычки", "Отмечай повторяющиеся дела и следи за серией."],
       tasks: ["Задачи", "Обычный список дел с приоритетами."],
       finance: ["Деньги", "Доходы, расходы и баланс в тенге."],
-      review: ["Итоги", "Коротко закрыть неделю и выбрать следующий шаг."]
+      review: ["Итоги", "Коротко закрыть неделю и выбрать следующий шаг."],
+      account: ["Аккаунт", "Вход, сохранение и синхронизация между телефоном и компьютером."]
     };
 
     const $ = selector => document.querySelector(selector);
@@ -1538,6 +1564,16 @@
       const name = accountEmail || "Гость";
       $("#accountBadge").textContent = accountEmail ? `Аккаунт: ${name}` : "Гость";
       $("#avatarMark").textContent = accountEmail ? name.slice(0, 1).toUpperCase() : "◎";
+      const box = $("#accountStatusBox");
+      if (box) {
+        box.textContent = accountEmail
+          ? `Вход выполнен: ${name}. Прогресс сохраняется в аккаунт.`
+          : "Войди или создай аккаунт, чтобы прогресс сохранялся между устройствами.";
+      }
+    }
+
+    function isMobileView() {
+      return window.matchMedia?.("(max-width: 620px)").matches;
     }
 
     function pct(part, total) {
@@ -1990,9 +2026,10 @@
         $("#welcomeAuth").style.display = "";
         updateAccountUi();
         setSyncStatus("Локальное сохранение · аккаунт отключён");
+        activateView("account");
         return;
       }
-      $("#authPanel").classList.toggle("open");
+      activateView("account");
     });
     $("#loginBtn").addEventListener("click", () => auth("login"));
     $("#registerBtn").addEventListener("click", () => auth("register"));
@@ -2004,6 +2041,16 @@
     $("#welcomeRegister").addEventListener("click", () => {
       $("#authLogin").value = $("#welcomeLogin").value;
       $("#authPassword").value = $("#welcomePassword").value;
+      auth("register");
+    });
+    $("#accountSignIn").addEventListener("click", () => {
+      $("#authLogin").value = $("#accountLogin").value;
+      $("#authPassword").value = $("#accountPassword").value;
+      auth("login");
+    });
+    $("#accountRegister").addEventListener("click", () => {
+      $("#authLogin").value = $("#accountLogin").value;
+      $("#authPassword").value = $("#accountPassword").value;
       auth("register");
     });
     $("#exportBtn").addEventListener("click", () => {
@@ -2039,6 +2086,7 @@
       normalizeState();
       if (supabaseClient && await loadAccountState()) {
         render();
+        if (isMobileView()) activateView("account");
         return;
       }
       if (syncCode) {
@@ -2048,6 +2096,7 @@
         setSyncStatus("Локальное сохранение · создай аккаунт, чтобы синхронизировать телефон и компьютер");
       }
       render();
+      if (isMobileView()) activateView("account");
     }
 
     init();

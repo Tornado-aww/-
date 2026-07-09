@@ -266,6 +266,12 @@
       color: #cfe1f3;
     }
 
+    .btn.danger {
+      border-color: rgba(255,88,112,.28);
+      background: rgba(255,88,112,.10);
+      color: #ffc2ca;
+    }
+
     .btn {
       min-height: 38px;
       padding: 0 13px;
@@ -353,7 +359,6 @@
     .command span {
       color: var(--muted);
       font-size: 12px;
-    }
     }
 
     .card-head {
@@ -781,6 +786,48 @@
       align-items: center;
     }
 
+    .day-list {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .day-list-item {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr) auto 34px;
+      gap: 9px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(7,17,31,.48);
+    }
+
+    .day-list-item.done {
+      border-color: rgba(53,224,123,.34);
+      background: rgba(53,224,123,.08);
+    }
+
+    .day-list-item.done strong {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+
+    .day-list-item span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      padding: 14px;
+      border: 1px dashed rgba(84,122,170,.5);
+      border-radius: 8px;
+      color: var(--muted);
+      background: rgba(7,17,31,.32);
+    }
+
     .time-cell, .plan-cell {
       min-height: 58px;
       padding: 9px;
@@ -889,6 +936,8 @@
       .timer-panel { grid-template-columns: 1fr; }
       .timer-face { margin: 0 auto; }
       .day-tools, .day-add { grid-template-columns: 1fr; }
+      .day-list-item { grid-template-columns: 30px minmax(0, 1fr) 34px; }
+      .day-list-item span { grid-column: 2 / 3; }
     }
   </style>
 </head>
@@ -905,7 +954,7 @@
       </div>
       <nav id="tabs">
         <button class="tab active" data-view="overview">▣ Главная</button>
-        <button class="tab" data-view="day">◴ День</button>
+        <button class="tab" data-view="day">✓ Сегодня</button>
         <button class="tab" data-view="week">▦ Неделя</button>
         <button class="tab" data-view="habits">✓ Привычки</button>
         <button class="tab" data-view="tasks">☰ Задачи</button>
@@ -934,7 +983,7 @@
         <div class="top-actions">
           <button class="btn" id="printBtn">Печать</button>
           <button class="btn" id="accountBtn">Аккаунт</button>
-          <button class="btn" id="clearBtn">Очистить</button>
+          <button class="btn danger" id="clearBtn" title="Полностью очистить план">Сброс</button>
           <button class="btn" id="importBtn">Импорт</button>
           <input id="importFile" type="file" accept="application/json" hidden>
           <button class="btn primary" id="exportBtn">Экспорт</button>
@@ -962,7 +1011,7 @@
       </section>
 
       <section class="command-grid">
-        <button class="command" data-jump="day"><strong>День</strong><span>план по времени и фокус-таймер</span></button>
+        <button class="command" data-jump="day"><strong>Сегодня</strong><span>дела с галочками и фокус-таймер</span></button>
         <button class="command" data-jump="habits"><strong>Привычки</strong><span>отметки на каждый день месяца</span></button>
         <button class="command" data-jump="tasks"><strong>Задачи</strong><span>список дел и приоритеты</span></button>
         <button class="command" data-jump="finance"><strong>Деньги</strong><span>доходы, расходы и баланс</span></button>
@@ -1041,7 +1090,7 @@
 
       <section class="view" id="day">
         <article class="card">
-          <div class="card-head"><h3>План дня</h3><span>утро • день • вечер • база</span></div>
+          <div class="card-head"><h3>Сегодня</h3><span>утро • день • вечер • дом</span></div>
           <div class="card-body">
             <div class="timer-panel">
               <div class="timer-face" id="timerFace">25:00</div>
@@ -1076,11 +1125,12 @@
                   <option>Утро</option>
                   <option>День</option>
                   <option>Вечер</option>
-                  <option>База</option>
+                  <option value="База">Дом</option>
                 </select>
                 <button class="btn primary" id="quickDayAdd">Добавить</button>
               </div>
             </div>
+            <div class="day-list" id="dayList"></div>
             <div class="day-board" id="dayBoard"></div>
           </div>
         </article>
@@ -1630,7 +1680,7 @@
       const areas = {};
       state.tasks.forEach(t => areas[t.area] = (areas[t.area] || 0) + 1);
       if (!Object.keys(areas).length) {
-        $("#categoryBars").innerHTML = `<div class="bar-row"><span>Пока пусто</span><div class="bar"><span style="width:0%"></span></div><strong>0</strong></div>`;
+        $("#categoryBars").innerHTML = `<div class="empty-state">Когда появятся задачи, здесь будет видно, куда уходит больше всего внимания.</div>`;
         return;
       }
       const max = Math.max(...Object.values(areas), 1);
@@ -1650,7 +1700,7 @@
             <td><strong>${pct(h.marks.length, h.goal)}%</strong></td>
             ${preview ? "" : `<td><button class="mini-btn" data-del-habit="${h.id}">×</button></td>`}
           </tr>
-        `).join("") : `<tr><td colspan="${days.length + (preview ? 2 : 3)}">Добавь первую привычку</td></tr>`}</tbody>
+        `).join("") : `<tr><td colspan="${days.length + (preview ? 2 : 3)}">Добавь первую привычку сверху, потом отмечай дни галочками.</td></tr>`}</tbody>
       </table>`;
     }
 
@@ -1671,7 +1721,7 @@
             <td><span class="pill ${priorityClass[t.priority]}">${priorityLabel[t.priority]}</span></td>
             <td><button class="mini-btn" data-del-task="${t.id}">×</button></td>
           </tr>
-        `).join("") : `<tr><td colspan="5">Добавь первую задачу</td></tr>`}</tbody>
+        `).join("") : `<tr><td colspan="5">Добавь первую задачу сверху. Галочка слева отмечает, что дело готово.</td></tr>`}</tbody>
       </table>`;
     }
 
@@ -1685,27 +1735,44 @@
             <td><strong>${formatMoney(m.amount)}</strong></td>
             <td><button class="mini-btn" data-del-money="${m.id}">×</button></td>
           </tr>
-        `).join("") : `<tr><td colspan="4">Добавь первый доход или расход</td></tr>`}</tbody>
+        `).join("") : `<tr><td colspan="4">Добавь первый доход или расход сверху, баланс посчитается сам.</td></tr>`}</tbody>
       </table>`;
       const expenses = state.money.filter(m => m.type === "expense");
       const max = Math.max(...expenses.map(m => Number(m.amount)), 1);
       $("#moneyBars").innerHTML = expenses.length ? expenses.map(m => `
         <div class="bar-row"><span>${escapeHtml(m.title)}</span><div class="bar"><span style="width:${Number(m.amount) / max * 100}%"></span></div><strong>${formatMoney(m.amount)}</strong></div>
-      `).join("") : `<div class="bar-row"><span>Пока пусто</span><div class="bar"><span style="width:0%"></span></div><strong>0 ₸</strong></div>`;
+      `).join("") : `<div class="empty-state">Расходов пока нет. Когда появятся траты, здесь будет видно самые крупные.</div>`;
     }
 
     function renderDay() {
-      const zones = ["Утро", "День", "Вечер", "База"];
+      const zones = [
+        { key: "Утро", label: "Утро" },
+        { key: "День", label: "День" },
+        { key: "Вечер", label: "Вечер" },
+        { key: "База", label: "Дом" }
+      ];
       const times = ["07:00", "09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"];
-      const entries = Object.values(state.day || {}).flat();
+      const entries = [];
+      times.forEach(time => zones.forEach(zone => {
+        const key = `${time}-${zone.key}`;
+        (state.day[key] || []).forEach(item => entries.push({ ...item, key, time, zone: zone.label }));
+      }));
       const total = entries.length;
       const done = entries.filter(item => item.done).length;
       const progress = pct(done, total);
       $("#dayProgressText").textContent = total ? `Готово ${done} из ${total} дел на день` : "На сегодня пока нет дел";
       $("#dayProgressLine").style.setProperty("--day-progress", `${progress}%`);
-      $("#dayBoard").innerHTML = `<div class="time-cell"></div>${zones.map(z => `<div class="time-cell">${z}</div>`).join("")}` +
+      $("#dayList").innerHTML = entries.length ? entries.map(item => `
+        <div class="day-list-item ${item.done ? "done" : ""}">
+          <button class="check ${item.done ? "on" : ""}" data-day-done="${item.key}" data-day-item="${item.id}">✓</button>
+          <strong>${escapeHtml(item.text)}</strong>
+          <span>${item.time} · ${item.zone}</span>
+          <button class="mini-btn" data-day-del="${item.key}" data-day-item="${item.id}">×</button>
+        </div>
+      `).join("") : `<div class="empty-state">Добавь первое дело сверху: например “зарядка”, “оплатить счёт” или “позвонить”.</div>`;
+      $("#dayBoard").innerHTML = `<div class="time-cell"></div>${zones.map(z => `<div class="time-cell">${z.label}</div>`).join("")}` +
         times.map(time => `<div class="time-cell">${time}</div>${zones.map(zone => {
-          const key = `${time}-${zone}`;
+          const key = `${time}-${zone.key}`;
           const items = state.day[key] || [];
           return `<div class="plan-cell">
             ${items.length ? items.map(item => `
